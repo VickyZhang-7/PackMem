@@ -9,6 +9,7 @@
     <script src="jspsych-continuous-recognition-task.js"></script>
     <script src="stimuli.js"></script>
     <link href="jspsych-6.3.1/css/continuous_recognition_task.css" rel="stylesheet" type="text/css">
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
   </head>
   <body>
     <div style="text-align: center;">
@@ -63,22 +64,63 @@
 				min_width: 1200,
 				min_height: 700
 			},
-        on_finish: function() {
-          var results = extractResults(jsPsych.data.get().values());
+        on_finish: async function() {
+        var results = extractResults(jsPsych.data.get().values());
 
-          // convert to strings
-          var imgSeqString = crt.img.toString()
-          var typeSeqString = crt.type.toString()
-          var RTSeqString = results.rt.toString()
-          var keyPressSeqString = results.keyPress.toString()
+        var DATAPIPE_ID = "n8cW4EQb5tbU";
 
-          var display_element = jsPsych.getDisplayElement();
-          display_element.innerHTML = "Please look at the console log for what the results will look like";
-          console.log("imgSeqString: " + imgSeqString);
-          console.log("typeSeqString: " + typeSeqString);
-          console.log("RTSeqString: " + RTSeqString);
-          console.log("keyPressSeqString: " + keyPressSeqString);
-        },
+        var participantID = jsPsych.data.getURLVariable('PROLIFIC_PID') 
+                  || "test_" + jsPsych.randomization.randomID(8);
+
+        var participantData = {
+            participant_id: participantID,
+            study_id: jsPsych.data.getURLVariable('STUDY_ID') || "",
+            session_id: jsPsych.data.getURLVariable('SESSION_ID') || "",
+
+            img: crt.img.toString(),
+            type: crt.type.toString(),
+            rt: results.rt.toString(),
+            keyPress: results.keyPress.toString(),
+
+            target_num: TARGETNUM,
+            stim_time: STIMTIME,
+            isi: ISI,
+            img_block_size: IMGBLOCKSIZE,
+            first_repeat_delay: FIRSTREPEATDELAY,
+            min_repeat_delay: MINREPEATDELAY,
+            vigilance_interval: VIGILANCEINTERVAL,
+            fixed_order: FIXEDORDER
+        };
+
+        var headers = Object.keys(participantData).join(",");
+        var values = Object.values(participantData).map(function(value) {
+            return '"' + String(value).replace(/"/g, '""') + '"';
+        }).join(",");
+
+        var csvContent = headers + "\n" + values;
+
+        var filename = "participant_" + participantID + "_" + Date.now() + ".csv";
+
+        var saveResult = await fetch("https://pipe.jspsych.org/api/data/", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+            experimentID: DATAPIPE_ID,
+            filename: filename,
+            data: csvContent
+            })
+        });
+
+        if (saveResult.ok) {
+            document.getElementById("display_stage").innerHTML =
+            "<p class='instr'>Thank you. Your data has been saved.</p>";
+        } else {
+            document.getElementById("display_stage").innerHTML =
+            "<p class='instr'>There was a problem saving your data. Please contact the researcher.</p>";
+        }
+        }
     });
   </script>
 </html>
