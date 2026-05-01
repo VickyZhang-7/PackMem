@@ -114,11 +114,9 @@
         });
 
         if (saveResult.ok) {
-            document.getElementById("display_stage").innerHTML =
-            "<p class='instr'>Thank you. Your data has been saved.</p>";
+          window.location.href = "https://app.prolific.com/submissions/complete?cc=CRH4OY92";
         } else {
-            document.getElementById("display_stage").innerHTML =
-            "<p class='instr'>There was a problem saving your data. Please contact the researcher.</p>";
+          alert("There was a problem saving your data. Please contact the researcher.");
         }
         }
     });
